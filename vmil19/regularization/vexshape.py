@@ -30,6 +30,9 @@ from bitstring import Bits
 from senslist import SensitivityList
 from special_chars import *
 
+# uncomment exactly one of the following two lines:
+#from multiprocessing.pool import ThreadPool as Pool
+from multiprocessing import Pool
 
 class Empty:
     def size(self):
@@ -158,11 +161,11 @@ def flatten(l):
             out.append(item)
     return out
 
-def vexSignature(code, arch):
-    irsb = pyvex.block.IRSB(code, 0x1000, arch, opt_level=-1)
+def vexSignature(encoding, arch):
+    irsb = pyvex.block.IRSB(encoding.bytes, 0x1000, arch, opt_level=-1)
     sig = [ termShape(t) for t in irsb.statements ]
     ops = [ termConstants(t) for t in irsb.statements ]
-    return irsb.tyenv.types, sig, flatten(ops)
+    return encoding, irsb.tyenv.types, sig, flatten(ops)
 
 def findArchInfo(archName):
     if archName=='powerpc':
@@ -199,19 +202,28 @@ class ShapeAnalysis:
         self.shapeIndices = {} #reverse of shapes
         self.P   = [None] * (2**self.entropy)
         self.OPS = [None] * (2**self.entropy)
+
         it = encodingspec_to_iter(self.spec)
-        k = 0
-        for encoding in it:
-            ty,sig,ops = vexSignature(encoding.bytes, self.arch)
-            thisSig = str((ty,sig))
-            if thisSig not in self.specimens:
-                self.specimens[thisSig] = encoding
-                self.shapes[k] = thisSig
-                self.shapeIndices[thisSig] = k
-                k = k+1
-            encodingInt = int(self.variableSlice(encoding), 2)
-            self.P[encodingInt] = self.shapeIndices[thisSig]
-            self.OPS[encodingInt] = ops
+
+        nworker = 4
+        print("Creating pool with", nworker, "processes.")
+        with Pool(processes = nworker) as pool:
+            multiple_results = [pool.apply_async(vexSignature, (encoding, self.arch)) for encoding in it]
+            k = 0
+            l = 0
+            for res in multiple_results:
+                l = l + 1
+                encoding,ty,sig,ops = res.get()
+                thisSig = str((ty,sig))
+                if thisSig not in self.specimens:
+                    self.specimens[thisSig] = encoding
+                    self.shapes[k] = thisSig
+                    self.shapeIndices[thisSig] = k
+                    k = k+1
+                encodingInt = int(self.variableSlice(encoding), 2)
+                self.P[encodingInt] = self.shapeIndices[thisSig]
+                self.OPS[encodingInt] = ops
+            print(l, "results processed.")
 
     def phase1_shapes(self):
         '''Group shapes'''

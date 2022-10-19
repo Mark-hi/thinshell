@@ -19,56 +19,7 @@ class OperandProjection:
 spec = ['001111', '00011', 5,   '00000000',8]
 #spec = ['001111',   5, '11100',   '00000000',8]
 #spec = ['001111',  5, '00011', '1111000011110000']
-import pudb ; pu.db
-
-anal = ShapeAnalysis(spec, 'powerpc')
-anal.phase0_VEX()
-print("Found %s shapes" % len(anal.shapes))
-print(anal.sensitivity)
-print("Representative instances:")
-for specimen in anal.section:
-    print(specimen)
-print("=========================")
-
-anal.phase1_shapes()
-print(anal.relevantBitPositionsString())
-for bits_shape in anal.shapeTags.items():
-    print(bits_shape)
-print("or in the opposite direction:")
-print(anal.tagSets)
-
-import pudb ; pu.db
-anal.phase2_partitioning()
-if anal.isRegular():
-    print("Instruction is REGULAR")
-else:
-    print("Instruction is easily normalizable;")
-    print("Narrow shape is %d" % anal.narrow)
-
-
-# infer operand formulae for the narrow shape
-print("=== shape %d: ============" % anal.narrow)
-print(anal.shapes[anal.narrow]) # cant to better because it's a string
-print("=== operands: ===========")
-print(".......")
-
-
-
-# infer operand formulae for the wide shape
-print("=== shape %d: ============" % anal.wide)
-print(anal.shapes[anal.wide]) # cant to better because it's a string
-print("=== operands: ===========")
-
-# a representative instance to fetch from OPS
-# this is only needed so that we know how many operands to iterate over
-wideSpecimen = anal.section[anal.wide]
-aaa = list(wideSpecimen).copy()
-aaa.reverse()
-b = Bits([aaa[k] for k in anal.varBitPositions])
-exampleOps = anal.OPS[b.uint]
-#opNum proshpandulivae range(exampleOps.len())
-opNum = 2
-shapeN = anal.wide
+#import pudb ; pu.db
 
 def inferFormulaFor(opNum, shapeN):
     proj = OperandProjection(anal.OPS, opNum)
@@ -96,10 +47,62 @@ def inferFormulaFor(opNum, shapeN):
         B = (anotherY+oneY-A*(anotherX+oneX))//2
         special('constant')
 
+if __name__ == '__main__':
+    anal = ShapeAnalysis(spec, 'powerpc')
+    anal.phase0_VEX()
+    print("Found %s shapes" % len(anal.shapes))
+    exit()
+    print(anal.sensitivity)
+    print("Representative instances:")
+    for specimen in anal.section:
+        print(specimen)
+    print("=========================")
+
+    anal.phase1_shapes()
+    print(anal.relevantBitPositionsString())
+    for bits_shape in anal.shapeTags.items():
+        print(bits_shape)
+    print("or in the opposite direction:")
+    print(anal.tagSets)
+
+    import pudb ; pu.db
+    anal.phase2_partitioning()
+    if anal.isRegular():
+        print("Instruction is REGULAR")
+    else:
+        print("Instruction is easily normalizable;")
+        print("Narrow shape is %d" % anal.narrow)
+
+
+# infer operand formulae for the narrow shape
+    print("=== shape %d: ============" % anal.narrow)
+    print(anal.shapes[anal.narrow]) # cant to better because it's a string
+    print("=== operands: ===========")
+    print(".......")
 
 
 
-f = inferFormulaFor(opNum, shapeN)
+# infer operand formulae for the wide shape
+    print("=== shape %d: ============" % anal.wide)
+    print(anal.shapes[anal.wide]) # cant to better because it's a string
+    print("=== operands: ===========")
+
+# a representative instance to fetch from OPS
+# this is only needed so that we know how many operands to iterate over
+    wideSpecimen = anal.section[anal.wide]
+    aaa = list(wideSpecimen).copy()
+    aaa.reverse()
+    b = Bits([aaa[k] for k in anal.varBitPositions])
+    exampleOps = anal.OPS[b.uint]
+#opNum proshpandulivae range(exampleOps.len())
+    opNum = 2
+    shapeN = anal.wide
+
+
+
+
+
+    f = inferFormulaFor(opNum, shapeN)
 
 
 
